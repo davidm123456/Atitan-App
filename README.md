@@ -4,7 +4,7 @@ Basic React Native app with user authentication and basic API intergration with 
 Dependency Installation:
 Commands for installation of required Dependencies(Feel free to copy and paste to your terminal):
 
-cd Antitan2
+cd Atitan2
 npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs @react-native-async-storage/async-storage axios expo-auth-session expo-web-browser
 npm install -D @types/react @types/react-native
 npm install expo-web-browser expo-auth-session expo-music-kit
