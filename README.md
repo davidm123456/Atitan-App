@@ -1,7 +1,7 @@
 Atitan App
 Basic React Native app with user authentication and basic API intergration with Spotify and Apple Music.
 
-NPM Installation:
+Package Installation:
 Commands for installation of required JSON packages(Feel free to copy and paste to your terminal):
 
 cd Antitan2
