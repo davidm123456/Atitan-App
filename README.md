@@ -2,7 +2,7 @@ Atitan App
 Basic React Native app with user authentication and basic API intergration with Spotify and Apple Music.
 
 Dependency Installation:
-Commands for installation of required Dependencies (Feel free to copy and paste to your terminal):
+Commands for installation of required Dependencies(Feel free to copy and paste to your terminal):
 
 cd Antitan2
 npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs @react-native-async-storage/async-storage axios expo-auth-session expo-web-browser
@@ -21,6 +21,6 @@ npm install react-native-screens react-native-safe-area-context
 
 App User Flow:
 -User sign in/sign up
--home screen (direction to apple music for spotify api)
+-home screen(direction to apple music for spotify api)
     *Apple api connection, basic functionality 
     *Spotify api connection
