@@ -2,15 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StyleSheet, View, Text, Button, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, Button, TextInput, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { 
   getSpotifyAuthConfig, 
   setAccessToken, 
   searchTracks, 
-  playSong 
+  playSong,
+  useSpotifyAuth
 } from './services/spotifyService';
 import { useAuthRequest } from 'expo-auth-session';
 import { encode as base64Encode } from 'base-64';
+import * as WebBrowser from 'expo-web-browser';
+import { getSpotifyAuthUrl } from './services/spotifyService';
+import { authenticateAppleMusic, playSong as playAppleMusicSong } from './services/appleMusicService';
+
+// Initialize WebBrowser
+WebBrowser.maybeCompleteAuthSession();
 
 // Create new screens
 const LoginScreen = ({ navigation }) => {
@@ -26,65 +33,25 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const SpotifyScreen = () => {
-  const [search, setSearch] = useState('');
-  const [tracks, setTracks] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  // Set up authentication request
-  const [request, response, promptAsync] = useAuthRequest(
-    getSpotifyAuthConfig(),
-    { useProxy: true }
-  );
+  const [accessToken, setAccessToken] = useState(null);
+  const [request, response, promptAsync] = useSpotifyAuth();
 
   useEffect(() => {
     if (response?.type === 'success') {
-      const { code } = response.params;
-      // Exchange code for token
-      exchangeCodeForToken(code);
+      const { access_token } = response.params;
+      setAccessToken(access_token);
     }
   }, [response]);
 
-  const exchangeCodeForToken = async (code) => {
-    try {
-      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${base64Encode(
-            `${spotifyConfig.clientId}:${spotifyConfig.clientSecret}`
-          )}`,
-        },
-        body: `grant_type=authorization_code&code=${code}&redirect_uri=${
-          spotifyConfig.redirectUri
-        }`,
-      });
-
-      const data = await tokenResponse.json();
-      setAccessToken(data.access_token);
-    } catch (error) {
-      console.error('Error exchanging code for token:', error);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!search.trim()) return;
+  const handlePlaySong = async () => {
+    if (!accessToken) return;
     
-    setLoading(true);
     try {
-      const result = await searchTracks(search);
-      setTracks(result.tracks.items);
+      // Example track URI - Replace with your desired track
+      const trackUri = 'spotify:track:6rqhFgbbKwnb9MLmUQDhG6';
+      await playSong(accessToken, trackUri);
     } catch (error) {
-      console.error('Error searching tracks:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePlayTrack = async (trackUri) => {
-    try {
-      await playSong(trackUri);
-    } catch (error) {
-      console.error('Error playing track:', error);
+      console.error('Error playing song:', error);
     }
   };
 
@@ -92,57 +59,73 @@ const SpotifyScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Spotify Integration</Text>
       
-      {!request && (
+      {!accessToken ? (
         <Button
-          title="Connect to Spotify"
+          title="Login with Spotify"
           onPress={() => promptAsync()}
+          disabled={!request}
         />
-      )}
-
-      {request && (
-        <>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search for a song..."
-              onSubmitEditing={handleSearch}
-            />
-            <Button title="Search" onPress={handleSearch} />
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#1DB954" />
-          ) : (
-            <FlatList
-              data={tracks}
-              keyExtractor={(item) => item.id}
-              style={styles.trackList}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.trackItem}
-                  onPress={() => handlePlayTrack(item.uri)}
-                >
-                  <Text style={styles.trackName}>{item.name}</Text>
-                  <Text style={styles.artistName}>
-                    {item.artists.map(artist => artist.name).join(', ')}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-        </>
+      ) : (
+        <Button
+          title="Play Sample Song"
+          onPress={handlePlaySong}
+        />
       )}
     </View>
   );
 };
 
 const AppleMusicScreen = () => {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleAppleMusicLogin = async () => {
+    try {
+      if (Platform.OS !== 'ios') {
+        setError('Apple Music is only available on iOS devices');
+        return;
+      }
+
+      const authorized = await authenticateAppleMusic();
+      setIsAuthorized(authorized);
+      setError(null);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  const handlePlaySong = async () => {
+    try {
+      // Example song ID - Replace with actual Apple Music song ID
+      await playAppleMusicSong('example_song_id');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Apple Music Integration</Text>
-      {/* Apple Music integration will go here */}
+      
+      {Platform.OS !== 'ios' ? (
+        <Text style={styles.error}>Apple Music is only available on iOS devices</Text>
+      ) : (
+        <>
+          {error && <Text style={styles.error}>{error}</Text>}
+          
+          {!isAuthorized ? (
+            <Button
+              title="Connect to Apple Music"
+              onPress={handleAppleMusicLogin}
+            />
+          ) : (
+            <Button
+              title="Play Sample Song"
+              onPress={handlePlaySong}
+            />
+          )}
+        </>
+      )}
     </View>
   );
 };
@@ -219,5 +202,10 @@ const styles = StyleSheet.create({
   artistName: {
     fontSize: 14,
     color: '#666',
+  },
+  error: {
+    color: 'red',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });

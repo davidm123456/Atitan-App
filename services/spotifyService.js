@@ -1,58 +1,38 @@
 import { ResponseType, makeRedirectUri, useAuthRequest } from 'expo-auth-session';
-import { encode as base64Encode } from 'base-64';
 
-const SPOTIFY_AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
-const SPOTIFY_TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
-const SPOTIFY_API_ENDPOINT = 'https://api.spotify.com/v1';
+const discovery = {
+  authorizationEndpoint: 'https://accounts.spotify.com/authorize',
+  tokenEndpoint: 'https://accounts.spotify.com/api/token',
+};
 
 const spotifyConfig = {
-  clientId: 'YOUR_SPOTIFY_CLIENT_ID',
-  clientSecret: 'YOUR_SPOTIFY_CLIENT_SECRET',
+  clientId: '0ec881b57e374817a1d280ede7a22522',
   scopes: [
-    'user-read-currently-playing',
-    'user-modify-playback-state',
     'streaming',
     'user-read-email',
-    'user-read-private'
+    'user-read-private',
+    'user-modify-playback-state'
   ],
+  // Using Expo's redirect URI
   redirectUri: makeRedirectUri({
-    scheme: 'your-app-scheme'
+    scheme: 'myapp'
   }),
 };
 
-let accessToken = null;
-
-export const getSpotifyAuthConfig = () => ({
-  authEndpoint: SPOTIFY_AUTH_ENDPOINT,
-  tokenEndpoint: SPOTIFY_TOKEN_ENDPOINT,
-  clientId: spotifyConfig.clientId,
-  scopes: spotifyConfig.scopes,
-  redirectUri: spotifyConfig.redirectUri,
-  responseType: ResponseType.Code,
-});
-
-export const setAccessToken = (token) => {
-  accessToken = token;
-};
-
-export const searchTracks = async (query) => {
-  if (!accessToken) throw new Error('Not authenticated');
-
-  const response = await fetch(
-    `${SPOTIFY_API_ENDPOINT}/search?q=${encodeURIComponent(query)}&type=track&limit=10`,
+export const useSpotifyAuth = () => {
+  return useAuthRequest(
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+      responseType: ResponseType.Token,
+      clientId: spotifyConfig.clientId,
+      scopes: spotifyConfig.scopes,
+      redirectUri: spotifyConfig.redirectUri,
+    },
+    discovery
   );
-  return response.json();
 };
 
-export const playSong = async (trackUri) => {
-  if (!accessToken) throw new Error('Not authenticated');
-
-  await fetch(`${SPOTIFY_API_ENDPOINT}/me/player/play`, {
+export const playSong = async (accessToken, trackUri) => {
+  await fetch(`https://api.spotify.com/v1/me/player/play`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
