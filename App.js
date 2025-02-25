@@ -14,7 +14,7 @@ import { useAuthRequest } from 'expo-auth-session';
 import { encode as base64Encode } from 'base-64';
 import * as WebBrowser from 'expo-web-browser';
 import { getSpotifyAuthUrl } from './services/spotifyService';
-import { authenticateAppleMusic, playSong as playAppleMusicSong } from './services/appleMusicService';
+import { authenticateAppleMusic, playSong as playAppleMusicSong, searchSongs } from './services/appleMusicService';
 
 // Initialize WebBrowser
 WebBrowser.maybeCompleteAuthSession();
@@ -78,11 +78,14 @@ const SpotifyScreen = () => {
 const AppleMusicScreen = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAppleMusicLogin = async () => {
     try {
-      if (Platform.OS !== 'ios') {
-        setError('Apple Music is only available on iOS devices');
+      if (Platform.OS !== 'web') {
+        setError('Apple Music web integration is only available in web browser');
         return;
       }
 
@@ -94,10 +97,24 @@ const AppleMusicScreen = () => {
     }
   };
 
-  const handlePlaySong = async () => {
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsLoading(true);
     try {
-      // Example song ID - Replace with actual Apple Music song ID
-      await playAppleMusicSong('example_song_id');
+      const songs = await searchSongs(searchQuery);
+      setSearchResults(songs);
+      setError(null);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlaySong = async (songId) => {
+    try {
+      await playSong(songId);
     } catch (error) {
       setError(error.message);
     }
@@ -107,8 +124,8 @@ const AppleMusicScreen = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Apple Music Integration</Text>
       
-      {Platform.OS !== 'ios' ? (
-        <Text style={styles.error}>Apple Music is only available on iOS devices</Text>
+      {Platform.OS !== 'web' ? (
+        <Text style={styles.error}>Apple Music web integration is only available in web browser</Text>
       ) : (
         <>
           {error && <Text style={styles.error}>{error}</Text>}
@@ -119,10 +136,39 @@ const AppleMusicScreen = () => {
               onPress={handleAppleMusicLogin}
             />
           ) : (
-            <Button
-              title="Play Sample Song"
-              onPress={handlePlaySong}
-            />
+            <>
+              <View style={styles.searchContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search for a song..."
+                  onSubmitEditing={handleSearch}
+                />
+                <Button title="Search" onPress={handleSearch} />
+              </View>
+
+              {isLoading ? (
+                <ActivityIndicator size="large" color="#000" />
+              ) : (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item) => item.id}
+                  style={styles.songList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.songItem}
+                      onPress={() => handlePlaySong(item.id)}
+                    >
+                      <Text style={styles.songName}>{item.attributes.name}</Text>
+                      <Text style={styles.artistName}>
+                        {item.attributes.artistName}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </>
           )}
         </>
       )}
@@ -207,5 +253,17 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  songList: {
+    width: '90%',
+  },
+  songItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  songName: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

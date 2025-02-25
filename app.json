@@ -22,7 +22,12 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "config": {
+        "music": {
+          "developerToken": "YOUR_DEVELOPER_TOKEN"
+        }
+      }
     },
     "scheme": "myapp"
   }
