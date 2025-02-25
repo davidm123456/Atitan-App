@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 // We'll use this later when you get your developer token
-const DEVELOPER_TOKEN = 'YOUR_DEVELOPER_TOKEN';
+const DEVELOPER_TOKEN = 'YOUR_GENERATED_TOKEN';
 
 // Load MusicKit JS SDK
 const loadMusicKit = async () => {

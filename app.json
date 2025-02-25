@@ -25,7 +25,7 @@
       "favicon": "./assets/favicon.png",
       "config": {
         "music": {
-          "developerToken": "YOUR_DEVELOPER_TOKEN"
+          "developerToken": "YOUR_GENERATED_TOKEN"
         }
       }
     },
