@@ -1,4 +1,5 @@
 import { ResponseType, makeRedirectUri, useAuthRequest } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.spotify.com/authorize',
@@ -13,33 +14,46 @@ const spotifyConfig = {
     'user-read-private',
     'user-modify-playback-state'
   ],
-  // Using Expo's redirect URI
-  redirectUri: makeRedirectUri({
-    scheme: 'myapp'
-  }),
 };
 
 export const useSpotifyAuth = () => {
+  const redirectUri = makeRedirectUri({
+    preferLocalhost: true,
+    scheme: 'myapp'
+  });
+
+  console.log('Spotify Redirect URI:', redirectUri);
+
   return useAuthRequest(
     {
       responseType: ResponseType.Token,
       clientId: spotifyConfig.clientId,
       scopes: spotifyConfig.scopes,
-      redirectUri: spotifyConfig.redirectUri,
+      redirectUri,
+      usePKCE: false,
     },
     discovery
   );
 };
 
-export const playSong = async (accessToken, trackUri) => {
-  await fetch(`https://api.spotify.com/v1/me/player/play`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      uris: [trackUri],
-    }),
-  });
+export const openSpotifyWebPlayer = async () => {
+  try {
+    // For web platforms
+    if (typeof window !== 'undefined') {
+      window.location.replace('https://open.spotify.com/');
+      return;
+    }
+    
+    // For mobile platforms
+    await WebBrowser.openAuthSessionAsync(
+      'https://accounts.spotify.com/authorize',
+      'https://open.spotify.com/'
+    );
+  } catch (error) {
+    console.error('Error opening Spotify:', error);
+    // Fallback
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://open.spotify.com/';
+    }
+  }
 }; 

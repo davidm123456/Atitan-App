@@ -3,13 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StyleSheet, View, Text, Button, TextInput, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
-import { 
-  getSpotifyAuthConfig, 
-  setAccessToken, 
-  searchTracks, 
-  playSong,
-  useSpotifyAuth
-} from './services/spotifyService';
+import { getSpotifyAuthConfig, setAccessToken, searchTracks, playSong,useSpotifyAuth, getUserPlaylists, openSpotifyWebPlayer } from './services/spotifyService';
 import { useAuthRequest } from 'expo-auth-session';
 import { encode as base64Encode } from 'base-64';
 import * as WebBrowser from 'expo-web-browser';
@@ -40,35 +34,25 @@ const SpotifyScreen = () => {
     if (response?.type === 'success') {
       const { access_token } = response.params;
       setAccessToken(access_token);
+      // Automatically redirect to Spotify web player after successful auth
+      openSpotifyWebPlayer();
     }
   }, [response]);
 
-  const handlePlaySong = async () => {
-    if (!accessToken) return;
-    
-    try {
-      // Example track URI - Replace with your desired track
-      const trackUri = 'spotify:track:6rqhFgbbKwnb9MLmUQDhG6';
-      await playSong(accessToken, trackUri);
-    } catch (error) {
-      console.error('Error playing song:', error);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Spotify Integration</Text>
+      <Text style={styles.title}>Spotify</Text>
       
       {!accessToken ? (
         <Button
           title="Login with Spotify"
-          onPress={() => promptAsync()}
+          onPress={() => promptAsync({ showInRecents: true })}
           disabled={!request}
         />
       ) : (
         <Button
-          title="Play Sample Song"
-          onPress={handlePlaySong}
+          title="Open Spotify Web Player"
+          onPress={openSpotifyWebPlayer}
         />
       )}
     </View>
@@ -265,5 +249,38 @@ const styles = StyleSheet.create({
   songName: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  menuContainer: {
+    width: '80%',
+    alignItems: 'stretch',
+  },
+  menuSpacing: {
+    height: 20,
+  },
+  contentContainer: {
+    width: '100%',
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  list: {
+    width: '100%',
+    marginVertical: 20,
+  },
+  listItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  songTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  playlistName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  playlistTracks: {
+    fontSize: 14,
+    color: '#666',
   },
 });
